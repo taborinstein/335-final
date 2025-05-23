@@ -34,8 +34,10 @@ void print_task(task_t task) {
 
 void free_tasks(task_t *tasks, int num_tasks) {
     for (int i = 0; i < num_tasks; i++) {
-        // free(tasks[i].)
+        for(int c = 0; c < tasks[i].cmdcount; c++) free(tasks[i].commands[c]);
+        free(tasks[i].commands);
     }
+    free(tasks);
 }
 int get_object_num(char *objects, char *value) {
     char *obj = objects;
@@ -193,6 +195,9 @@ int main(int argc, char **argv) {
         free_tasks(tasks, num_tasks);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
+
+
+    
 
     // printf("Hello from Node %d\n", rank);
 
