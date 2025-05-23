@@ -15,16 +15,21 @@ typedef struct {
 } task_t;
 
 void print_task(task_t task) {
-    printf("[%s] {\n    id: %d,\n    deps: [", task.target,
-           task.id);
+    printf("[%s] {\n    id: %d,\n    deps: [", task.target, task.id);
     for (int i = 0; i < task.depcount; i++) {
         printf("%d", task.deps[i]);
         if (i != task.depcount - 1)
             printf(", ");
     }
-    printf("],\n    depcount: %d,\n    "
+    printf("],\n    cmds: [\n    ");
+    for (int i = 0; i < task.cmdcount; i++) {
+        printf("    \"%s\"", task.commands[i]);
+        if (i != task.cmdcount - 1)
+            printf(",\n    ");
+    }
+    printf("\n    ],\n    cmdcount: %d,\n    depcount: %d,\n    "
            "exit: %d\n}\n",
-           task.depcount, task.exit);
+           task.cmdcount, task.depcount, task.exit);
 }
 
 void free_tasks(task_t *tasks, int num_tasks) {
@@ -89,8 +94,8 @@ int main(int argc, char **argv) {
         char line[256];
         int lnum = 0;
         while (fgets(line, 256, bpmk) != NULL) {
+            // first line should start with @objects
             if (lnum == 0) {
-                // first line should start with @objects
                 if (strncmp("@for", line, 4) == 0) {
                     printf(
                         "pmk: Line 0 in build.pmk must start with @objects\n");
@@ -107,7 +112,7 @@ int main(int argc, char **argv) {
                 num_tasks++;
                 if (num_tasks > tasks_len)
                     tasks = realloc(tasks, sizeof(task_t) * (tasks_len *= 2));
-
+                tasks[num_tasks - 1].exit = -1;
                 // iterate through line
                 int pos = 4;
                 int setter = 0;
@@ -138,26 +143,46 @@ int main(int argc, char **argv) {
                 while (line[pos] != '\0') {
                     while (line[pos] == ' ')
                         pos++;
-                    printf("%d\n", pos);
                     char dep[256];
                     int i = 0;
-                    while(line[pos] != ' ' && line[pos] != '\n') {
+                    while (line[pos] != ' ' && line[pos] != '\n') {
                         dep[i++] = line[pos];
                         pos++;
                     }
                     dep[i] = 0;
                     int dep_id = get_object_num(objects, dep);
-                    if(dep_id < 0) {
-                        printf("pmk: Invalid dependency on line %d position %d\n",
-                               lnum, pos);
+                    if (dep_id < 0) {
+                        printf(
+                            "pmk: Invalid dependency on line %d position %d\n",
+                            lnum, pos);
                         errors++;
                         break;
                     }
-                    tasks[num_tasks - 1].deps[tasks[num_tasks - 1].depcount++] = dep_id;
+                    tasks[num_tasks - 1].deps[tasks[num_tasks - 1].depcount++] =
+                        dep_id;
 
-                        pos++;
+                    pos++;
                 }
             }
+            // otherwise append command to current target
+            else {
+                if (strncmp("    ", line, 4)) {
+                    printf("pmk: Indentation error on line %d\n", lnum);
+                    errors++;
+                    break;
+                }
+                char *cmd = malloc(sizeof(char) * (strlen(line) - 5));
+                // if this were a char* and not a char[], we could do line += 4
+                // :(
+                strncpy(cmd, line + 4, strlen(line) - 5); // -5 bc \n
+                tasks[num_tasks - 1].cmdcount++;
+                tasks[num_tasks - 1].commands =
+                    realloc(tasks[num_tasks - 1].commands,
+                            sizeof(char *) * tasks[num_tasks - 1].cmdcount);
+                tasks[num_tasks - 1]
+                    .commands[tasks[num_tasks - 1].cmdcount - 1] = cmd;
+            }
+
             lnum++;
         }
     }

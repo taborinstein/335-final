@@ -19,7 +19,7 @@ for line in makefile.split("\n"):
     else: pmk.write(line + "\n")
 pmk.close()
 
-proc = subprocess.run(["make", "-f", mkname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+proc = subprocess.run(["make", "-f", mkname, "-j", "1"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 os.remove(mkname)
 if len(proc.stderr) > 0: 
     print("STDERR", proc.stderr)
@@ -28,6 +28,7 @@ if len(proc.stderr) > 0:
 nodeps = []
 wdeps = []
 objects = []
+last_target = ""
 for line in proc.stdout.decode("utf8").split("\n"):
     if line == "": continue
     (target, deps, commands) = line.split("\0")
@@ -36,10 +37,15 @@ for line in proc.stdout.decode("utf8").split("\n"):
     if target not in objects: objects.append(target)
     for dep in deps.split(" "): 
         if dep.strip() not in objects and len(dep.strip()) > 0: objects.append(dep.strip())
-    commands = commands[1:] # remove leading space
+    commands = commands.strip() # remove leading space
     if commands[0] == '@': commands = commands[1:]
-    if len(deps) == 0: nodeps.append(f"@for {target}\n    {commands}")
-    else: wdeps.append(f"@for {target} < {deps}\n    {commands}")
+    if target == last_target:
+        nodeps.append(f"    {commands}")
+    else:
+        if len(deps) == 0: nodeps.append(f"@for {target}\n    {commands}")
+        else: wdeps.append(f"@for {target} < {deps}\n    {commands}")
+    
+    last_target = target
 _bpmk = open("build.pmk", "w")
 _bpmk.write("@objects " + " ".join(objects) + "\n")
 _bpmk.write("\n".join(nodeps) + "\n" + "\n".join(wdeps))
