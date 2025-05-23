@@ -1,0 +1,9 @@
+build/
+build.pmk
+pmk
+bin
+test/build.pmk
+test/build/
+test/mk_tmp
+test/main_lib
+test/main_nolib

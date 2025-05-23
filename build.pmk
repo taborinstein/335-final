@@ -1,3 +1,0 @@
-
-@for pmk < src/main.c
-    cc -o pmk src/main.c
