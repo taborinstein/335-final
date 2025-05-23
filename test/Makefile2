@@ -1,0 +1,27 @@
+EXE := main_lib
+
+all: dircheck $(EXE)
+
+$(EXE): build/obj_a.o build/obj_b.o build/main.o build/lib.a
+	cc -o $@ $^
+
+build/lib.a: build/lib_a.o build/lib_b.o
+	ar -rcs $@ $^
+
+build/lib_a.o: src/lib_a.c
+	cc -c -o $@ $^
+build/lib_b.o: src/lib_b.c
+	cc -c -o $@ $^
+build/obj_a.o: src/obj_a.c
+	cc -c -o $@ $^
+build/obj_b.o: src/obj_b.c
+	cc -c -o $@ $^
+build/main.o: src/main.c
+	cc -c -o $@ $^
+
+clean:
+	@rm -f $(EXE) two_commands_in_one_target_test $(wildcard build/*.o)
+dircheck:
+	@mkdir -p build
+	@touch two_commands_in_one_target_test
+.PHONY: dircheck clean
