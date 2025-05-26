@@ -10,7 +10,6 @@ int get_object_num(char *objects, char *value) {
     char *obj = objects;
     int index = 0;
     while (*obj != 0) {
-        // printf("Comparing %c %c\n", value[0], *obj);
         while (*obj == ' ')
             obj++;
         int matches = 1;
@@ -91,8 +90,6 @@ void read_pmk(task_t **tasks, int *num_tasks, char **objects, int *num_objects, 
                 break;
             }
             pos++;
-            // char **deps = malloc(sizeof(char*) * 1); // will remalloc
-            // this
             while (line[pos] != '\0') {
                 while (line[pos] == ' ')
                     pos++;
@@ -123,9 +120,8 @@ void read_pmk(task_t **tasks, int *num_tasks, char **objects, int *num_objects, 
                 errors++;
                 break;
             }
-            char cmd[256]; // = malloc(sizeof(char) * (strlen(line) - 5));
-            // if this were a char* and not a char[], we could do line += 4
-            // :(
+            char cmd[256];
+            // if this were a char* and not a char[], we could do line += 4 :(
             int i = 0;
             int len = strlen(line);
                 strncpy((*tasks)[*num_tasks - 1]
