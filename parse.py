@@ -15,11 +15,13 @@ current_target = ""
 for line in makefile.split("\n"):
     if line.startswith("\t"):
         line = line[1:]
-        pmk.write(f'\t@echo -e $@"\\0"$^"\\0" ' + line + "\n")
+        # using /bin/echo instead of echo bc for some reason
+        # the one in /bin/sh doesn't support -e
+        pmk.write(f'\t@/bin/echo -e $@"\\0"$^"\\0" ' + line + "\n")
     else: pmk.write(line + "\n")
 pmk.close()
 
-proc = subprocess.run(["make", "-f", mkname, "-j", "1"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+proc = subprocess.run(["make", "-f", mkname, "-j", "1", "-B"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 os.remove(mkname)
 if len(proc.stderr) > 0: 
     print("STDERR", proc.stderr)
